@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.log
+.env
+.env.local
+.env.development
+.env.production
+.DS_Store
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~

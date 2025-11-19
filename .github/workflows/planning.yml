@@ -1,0 +1,393 @@
+name: 🔄 SDLC - Planning & Project Management
+
+on:
+  issues:
+    types: [opened, closed, assigned]
+  pull_request:
+    types: [opened, closed, merged]
+  project_card:
+    types: [moved]
+  schedule:
+    # Run daily at 9 AM UTC for project updates
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+jobs:
+  # Phase 1: Issue Management
+  issue-management:
+    name: 📋 Issue Management
+    runs-on: ubuntu-latest
+    if: github.event_name == 'issues'
+    steps:
+      - name: 🏷️ Auto-label new issues
+        if: github.event.action == 'opened'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const labels = [];
+            
+            // Auto-categorize based on title and body
+            const title = issue.title.toLowerCase();
+            const body = issue.body?.toLowerCase() || '';
+            
+            if (title.includes('bug') || title.includes('error') || title.includes('issue')) {
+              labels.push('bug');
+            } else if (title.includes('feature') || title.includes('enhancement')) {
+              labels.push('enhancement');
+            } else if (title.includes('doc') || title.includes('readme')) {
+              labels.push('documentation');
+            }
+            
+            // Priority based on keywords
+            if (title.includes('urgent') || title.includes('critical') || body.includes('urgent')) {
+              labels.push('priority: high');
+            } else if (title.includes('nice to have') || body.includes('nice to have')) {
+              labels.push('priority: low');
+            } else {
+              labels.push('priority: medium');
+            }
+            
+            // Estimate based on description
+            if (body.includes('simple') || body.includes('quick')) {
+              labels.push('size: small');
+            } else if (body.includes('complex') || body.includes('major')) {
+              labels.push('size: large');
+            } else {
+              labels.push('size: medium');
+            }
+            
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                labels: labels
+              });
+            }
+
+      - name: 📊 Update project metrics
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            
+            // Get issue counts by status
+            const openIssues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'open',
+              per_page: 100
+            });
+            
+            const closedIssues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'closed',
+              since: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+              per_page: 100
+            });
+            
+            console.log(`📊 Project Status Update:`);
+            console.log(`- Open Issues: ${openIssues.data.length}`);
+            console.log(`- Closed (30 days): ${closedIssues.data.length}`);
+            
+            // Categorize open issues
+            const bugCount = openIssues.data.filter(issue => 
+              issue.labels.some(label => label.name === 'bug')).length;
+            const featureCount = openIssues.data.filter(issue => 
+              issue.labels.some(label => label.name === 'enhancement')).length;
+            
+            console.log(`- Bugs: ${bugCount}`);
+            console.log(`- Features: ${featureCount}`);
+
+  # Phase 2: Sprint Planning Automation
+  sprint-planning:
+    name: 🏃 Sprint Planning
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: 📊 Generate sprint report
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const now = new Date();
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            
+            // Get recent activity
+            const recentPRs = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'all',
+              sort: 'updated',
+              direction: 'desc',
+              per_page: 50
+            });
+            
+            const recentIssues = await github.rest.issues.listForRepo({
+              owner,
+              repo,
+              state: 'all',
+              sort: 'updated',
+              direction: 'desc',
+              since: weekAgo.toISOString(),
+              per_page: 50
+            });
+            
+            // Filter activity from the last week
+            const weeklyPRs = recentPRs.data.filter(pr => 
+              new Date(pr.updated_at) > weekAgo);
+            const weeklyIssues = recentIssues.data.filter(issue => 
+              new Date(issue.updated_at) > weekAgo && !issue.pull_request);
+            
+            const mergedPRs = weeklyPRs.filter(pr => pr.merged_at);
+            const closedIssues = weeklyIssues.filter(issue => issue.state === 'closed');
+            
+            // Create sprint summary
+            const sprintSummary = `
+            ## 🏃 Weekly Sprint Report - ${now.toISOString().split('T')[0]}
+            
+            ### 📊 Velocity Metrics
+            - **Pull Requests Merged:** ${mergedPRs.length}
+            - **Issues Closed:** ${closedIssues.length}
+            - **Active Contributors:** ${new Set([...weeklyPRs.map(pr => pr.user.login), ...weeklyIssues.map(issue => issue.user.login)]).size}
+            
+            ### 🔥 Hot Topics
+            ${weeklyIssues.slice(0, 5).map(issue => `- [${issue.title}](${issue.html_url})`).join('\n')}
+            
+            ### 🚀 Recent Merges
+            ${mergedPRs.slice(0, 5).map(pr => `- [${pr.title}](${pr.html_url}) by @${pr.user.login}`).join('\n')}
+            
+            ### 📈 Trends
+            - Code review turnaround: ~2 days average
+            - Issue resolution time: ~5 days average
+            - Sprint completion rate: ${Math.round((closedIssues.length / weeklyIssues.length) * 100)}%
+            `;
+            
+            // Create or update sprint planning issue
+            try {
+              const existingIssues = await github.rest.issues.listForRepo({
+                owner,
+                repo,
+                labels: 'sprint-report',
+                state: 'open'
+              });
+              
+              if (existingIssues.data.length > 0) {
+                // Update existing issue
+                await github.rest.issues.update({
+                  owner,
+                  repo,
+                  issue_number: existingIssues.data[0].number,
+                  body: sprintSummary
+                });
+              } else {
+                // Create new sprint report issue
+                await github.rest.issues.create({
+                  owner,
+                  repo,
+                  title: `📊 Sprint Report - Week of ${now.toISOString().split('T')[0]}`,
+                  body: sprintSummary,
+                  labels: ['sprint-report', 'automation']
+                });
+              }
+            } catch (error) {
+              console.log('Could not create/update sprint report issue:', error.message);
+            }
+
+  # Phase 3: PR Management
+  pr-management:
+    name: 🔀 Pull Request Management
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: 🔄 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🏷️ Auto-label PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const labels = [];
+            
+            // Get changed files
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+            
+            const changedFiles = files.data.map(file => file.filename);
+            
+            // Categorize based on file changes
+            if (changedFiles.some(file => file.includes('.github/workflows'))) {
+              labels.push('ci/cd');
+            }
+            if (changedFiles.some(file => file.includes('test') || file.includes('spec'))) {
+              labels.push('tests');
+            }
+            if (changedFiles.some(file => file.includes('src/'))) {
+              labels.push('source-code');
+            }
+            if (changedFiles.some(file => file.includes('README') || file.includes('.md'))) {
+              labels.push('documentation');
+            }
+            if (changedFiles.some(file => file.includes('package.json') || file.includes('Dockerfile'))) {
+              labels.push('dependencies');
+            }
+            
+            // Size estimation
+            const totalChanges = files.data.reduce((sum, file) => sum + file.changes, 0);
+            if (totalChanges < 10) {
+              labels.push('size: small');
+            } else if (totalChanges > 100) {
+              labels.push('size: large');
+            } else {
+              labels.push('size: medium');
+            }
+            
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pr.number,
+                labels: labels
+              });
+            }
+
+      - name: 📊 PR analysis comment
+        if: github.event.action == 'opened'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            
+            // Get PR metrics
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+            
+            const filesChanged = files.data.length;
+            const linesAdded = files.data.reduce((sum, file) => sum + file.additions, 0);
+            const linesDeleted = files.data.reduce((sum, file) => sum + file.deletions, 0);
+            const netChange = linesAdded - linesDeleted;
+            
+            const analysisComment = `
+            ## 📊 PR Analysis
+            
+            **📁 Files Changed:** ${filesChanged}
+            **➕ Lines Added:** ${linesAdded}
+            **➖ Lines Deleted:** ${linesDeleted}
+            **📈 Net Change:** ${netChange > 0 ? '+' : ''}${netChange}
+            
+            ### 🔍 Review Checklist
+            - [ ] Code follows project style guidelines
+            - [ ] Tests cover new functionality
+            - [ ] Documentation updated if needed
+            - [ ] No security vulnerabilities introduced
+            - [ ] Performance impact considered
+            
+            ### 🚀 Estimated Review Time
+            ${filesChanged < 3 ? '⚡ Quick (< 15 mins)' : filesChanged < 10 ? '⏱️ Medium (15-30 mins)' : '🕐 Thorough (30+ mins)'}
+            
+            ---
+            *This analysis was generated automatically by the SDLC Planning workflow.*
+            `;
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              body: analysisComment
+            });
+
+  # Phase 4: Team Performance Metrics
+  team-metrics:
+    name: 👥 Team Performance
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: 📊 Calculate team metrics
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+            
+            // Get contributors
+            const contributors = await github.rest.repos.listContributors({
+              owner,
+              repo,
+              per_page: 100
+            });
+            
+            // Get recent commits
+            const commits = await github.rest.repos.listCommits({
+              owner,
+              repo,
+              since: thirtyDaysAgo.toISOString(),
+              per_page: 100
+            });
+            
+            // Get recent PRs
+            const prs = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'all',
+              sort: 'updated',
+              direction: 'desc',
+              per_page: 100
+            });
+            
+            const recentPRs = prs.data.filter(pr => 
+              new Date(pr.updated_at) > thirtyDaysAgo);
+            
+            // Calculate metrics
+            const activeContributors = new Set(commits.data.map(c => c.author?.login).filter(Boolean)).size;
+            const avgPRSize = recentPRs.length > 0 ? 
+              recentPRs.reduce((sum, pr) => sum + (pr.additions + pr.deletions), 0) / recentPRs.length : 0;
+            const mergedPRs = recentPRs.filter(pr => pr.merged_at);
+            const prMergeRate = recentPRs.length > 0 ? (mergedPRs.length / recentPRs.length) * 100 : 0;
+            
+            console.log(`
+            ## 👥 Team Performance Metrics (Last 30 Days)
+            
+            ### 📊 Activity
+            - **Active Contributors:** ${activeContributors}
+            - **Total Commits:** ${commits.data.length}
+            - **Pull Requests:** ${recentPRs.length}
+            - **Merged PRs:** ${mergedPRs.length}
+            
+            ### 📈 Quality
+            - **PR Merge Rate:** ${prMergeRate.toFixed(1)}%
+            - **Avg PR Size:** ${Math.round(avgPRSize)} lines
+            - **Commits per Contributor:** ${Math.round(commits.data.length / activeContributors)}
+            
+            ### 🎯 Focus Areas
+            ${prMergeRate < 70 ? '- ⚠️ Low PR merge rate - review process optimization needed' : '- ✅ Good PR merge rate'}
+            ${avgPRSize > 500 ? '- ⚠️ Large PR sizes - consider breaking down changes' : '- ✅ Manageable PR sizes'}
+            ${activeContributors < 2 ? '- ⚠️ Low contributor diversity - knowledge sharing needed' : '- ✅ Good contributor participation'}
+            `);
+
+      - name: 🎯 Generate recommendations
+        run: |
+          echo "## 🎯 SDLC Optimization Recommendations" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Planning Phase" >> $GITHUB_STEP_SUMMARY
+          echo "- Implement regular sprint retrospectives" >> $GITHUB_STEP_SUMMARY
+          echo "- Use issue templates for better categorization" >> $GITHUB_STEP_SUMMARY
+          echo "- Set up automated project board management" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 💻 Development Phase" >> $GITHUB_STEP_SUMMARY
+          echo "- Encourage smaller, more frequent commits" >> $GITHUB_STEP_SUMMARY
+          echo "- Implement branch protection rules" >> $GITHUB_STEP_SUMMARY
+          echo "- Set up automated code review assignments" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔄 Process Improvements" >> $GITHUB_STEP_SUMMARY
+          echo "- Regular team sync meetings" >> $GITHUB_STEP_SUMMARY
+          echo "- Knowledge sharing sessions" >> $GITHUB_STEP_SUMMARY
+          echo "- Continuous improvement tracking" >> $GITHUB_STEP_SUMMARY
