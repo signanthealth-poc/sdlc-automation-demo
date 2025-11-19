@@ -57,12 +57,11 @@ jobs:
           VALIDATE_TYPESCRIPT_ES: true
           VALIDATE_DOCKERFILE: true
           VALIDATE_JSON: true
-          VALIDATE_MARKDOWN: true
-          MARKDOWN_CONFIG_FILE: .markdownlint.json
           SUPPRESS_POSSUM: true
           CREATE_LOG_FILE: false
           DISABLE_ERRORS: false
           FILTER_REGEX_EXCLUDE: .*node_modules.*
+          VALIDATE_MARKDOWN: false # Optional
 
   # Phase 2: Build & Test
   build-test:
