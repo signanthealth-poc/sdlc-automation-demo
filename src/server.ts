@@ -6,6 +6,7 @@ import { logger } from './utils/logger';
 import { metricsMiddleware, register } from './utils/metrics';
 import { healthRouter } from './routes/health';
 import { apiRouter } from './routes/api';
+import { taskRouter } from './routes/tasks';
 import { errorHandler } from './middleware/errorHandler';
 
 const app = express();
@@ -28,6 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/health', healthRouter);
 app.use('/api', apiRouter);
+app.use('/api/tasks', taskRouter);
 app.get('/metrics', async (req, res) => {
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
