@@ -37,6 +37,11 @@ jobs:
       - name: 📦 Install dependencies
         run: npm ci
 
+      - name: 🔍 Verify ESLint installation
+        run: |
+          npm list @typescript-eslint/parser @typescript-eslint/eslint-plugin eslint
+          npx eslint --version
+
       - name: 🔍 Run ESLint
         run: npm run lint
 
