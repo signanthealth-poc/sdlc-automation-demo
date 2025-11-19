@@ -50,7 +50,7 @@ app.get('/', (req, res) => {
 app.use(errorHandler);
 
 // Start server only if not in test environment
-let server: any;
+let server: ReturnType<typeof app.listen>;
 
 if (process.env.NODE_ENV !== 'test') {
   server = app.listen(PORT, () => {
