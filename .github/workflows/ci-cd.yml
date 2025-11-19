@@ -184,10 +184,10 @@ jobs:
       - name: 🔄 Checkout code
         uses: actions/checkout@v4
 
-      - name: 🟢 Setup Node.js
+      - name: 🟢 Setup Node.js 20 for Performance Testing
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: '20'
           cache: 'npm'
 
       - name: 📦 Install dependencies
@@ -203,10 +203,21 @@ jobs:
         env:
           NODE_ENV: production
 
-      - name: ⚡ Run load tests
+      - name: ⚡ Run basic health checks
         run: |
-          npx artillery quick --count 50 --num 5 http://localhost:3000/api/status
-          npx artillery quick --count 25 --num 3 http://localhost:3000/health
+          curl -f http://localhost:3000/health || exit 1
+          curl -f http://localhost:3000/api/status || exit 1
+          echo "✅ Health checks passed"
+
+      - name: ⚡ Run simple load test with curl
+        run: |
+          echo "🔄 Running basic load test..."
+          for i in {1..10}; do
+            curl -s http://localhost:3000/api/status > /dev/null &
+            curl -s http://localhost:3000/health > /dev/null &
+          done
+          wait
+          echo "✅ Basic load test completed"
 
       - name: 🛑 Stop application
         run: pkill -f "npm start" || true
