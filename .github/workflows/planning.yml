@@ -27,10 +27,48 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'issues'
     steps:
+      - name: 🏗️ Create required labels
+        if: github.event.action == 'opened'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const requiredLabels = [
+              { name: 'bug', color: 'd73a4a', description: 'Something isn\'t working' },
+              { name: 'enhancement', color: 'a2eeef', description: 'New feature or request' },
+              { name: 'documentation', color: '0075ca', description: 'Improvements or additions to documentation' },
+              { name: 'priority: high', color: 'b60205', description: 'High priority item' },
+              { name: 'priority: medium', color: 'fbca04', description: 'Medium priority item' },
+              { name: 'priority: low', color: '0e8a16', description: 'Low priority item' },
+              { name: 'size: small', color: 'c2e0c6', description: 'Small effort required' },
+              { name: 'size: medium', color: 'fef2c0', description: 'Medium effort required' },
+              { name: 'size: large', color: 'f9d0c4', description: 'Large effort required' }
+            ];
+
+            for (const label of requiredLabels) {
+              try {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name,
+                  color: label.color,
+                  description: label.description
+                });
+                console.log(`Created label: ${label.name}`);
+              } catch (error) {
+                if (error.status === 422) {
+                  console.log(`Label already exists: ${label.name}`);
+                } else {
+                  console.log(`Error creating label ${label.name}:`, error.message);
+                }
+              }
+            }
+
       - name: 🏷️ Auto-label new issues
         if: github.event.action == 'opened'
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const issue = context.payload.issue;
             const labels = [];
@@ -66,12 +104,18 @@ jobs:
             }
             
             if (labels.length > 0) {
-              await github.rest.issues.addLabels({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: issue.number,
-                labels: labels
-              });
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  labels: labels
+                });
+                console.log(`Successfully added labels: ${labels.join(', ')}`);
+              } catch (error) {
+                console.log(`Error adding labels:`, error.message);
+                console.log(`Attempted to add labels: ${labels.join(', ')}`);
+              }
             }
 
       - name: 📊 Update project metrics
