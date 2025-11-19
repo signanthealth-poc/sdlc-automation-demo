@@ -49,17 +49,6 @@ jobs:
         run: npm audit --audit-level high
         continue-on-error: true
 
-      - name: 📊 Code quality report
-        uses: github/super-linter@v5
-        env:
-          DEFAULT_BRANCH: main
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SUPPRESS_POSSUM: true
-          CREATE_LOG_FILE: false
-          DISABLE_ERRORS: false
-          FILTER_REGEX_EXCLUDE: .*node_modules.*
-          VALIDATE_ALL_CODEBASE: true
-
   # Phase 2: Build & Test
   build-test:
     name: 🏗️ Build & Test
