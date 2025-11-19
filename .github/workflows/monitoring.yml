@@ -21,6 +21,11 @@ on:
   repository_dispatch:
     types: [alert-triggered, incident-created]
 
+permissions:
+  contents: read
+  issues: write
+  actions: read
+
 env:
   MONITORING_ENABLED: true
   ALERT_WEBHOOK: ${{ secrets.ALERT_WEBHOOK }}
