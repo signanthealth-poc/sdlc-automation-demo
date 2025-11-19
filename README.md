@@ -1,8 +1,8 @@
 # 🔄 SDLC Automation Demo
 
-[![CI/CD Pipeline](https://github.com/USERNAME/REPO/workflows/🔄%20SDLC%20-%20Code%20&%20Build%20Pipeline/badge.svg)](https://github.com/USERNAME/REPO/actions)
-[![Release Pipeline](https://github.com/USERNAME/REPO/workflows/🚀%20SDLC%20-%20Release%20&%20Deploy%20Pipeline/badge.svg)](https://github.com/USERNAME/REPO/actions)
-[![Monitoring](https://github.com/USERNAME/REPO/workflows/📊%20SDLC%20-%20Monitoring%20&%20Operations/badge.svg)](https://github.com/USERNAME/REPO/actions)
+[![CI/CD Pipeline](https://github.com/signanthealth-poc/sdlc-automation-demo/workflows/🔄%20SDLC%20-%20Code%20&%20Build%20Pipeline/badge.svg)](https://github.com/signanthealth-poc/sdlc-automation-demo/actions)
+[![Release Pipeline](https://github.com/signanthealth-poc/sdlc-automation-demo/workflows/🚀%20SDLC%20-%20Release%20&%20Deploy%20Pipeline/badge.svg)](https://github.com/signanthealth-poc/sdlc-automation-demo/actions)
+[![Monitoring](https://github.com/signanthealth-poc/sdlc-automation-demo/workflows/📊%20SDLC%20-%20Monitoring%20&%20Operations/badge.svg)](https://github.com/signanthealth-poc/sdlc-automation-demo/actions)
 
 A comprehensive demonstration of **Software Development Life Cycle (SDLC) automation** using GitHub Actions, showcasing all phases of modern software development: Plan, Code, Build, Test, Release, Deploy, Operate, and Monitor.
 
