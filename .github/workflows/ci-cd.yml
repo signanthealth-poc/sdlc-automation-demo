@@ -54,14 +54,11 @@ jobs:
         env:
           DEFAULT_BRANCH: main
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VALIDATE_TYPESCRIPT_ES: true
-          VALIDATE_DOCKERFILE: true
-          VALIDATE_JSON: true
           SUPPRESS_POSSUM: true
           CREATE_LOG_FILE: false
           DISABLE_ERRORS: false
           FILTER_REGEX_EXCLUDE: .*node_modules.*
-          VALIDATE_MARKDOWN: false # Optional
+          VALIDATE_ALL_CODEBASE: true
 
   # Phase 2: Build & Test
   build-test:
