@@ -175,6 +175,23 @@ docker run -p 3000:3000 sdlc-demo
 - `POST /api/users` - Create new user
 - `GET /api/error` - Error simulation for testing
 
+### Task Management (NEW)
+- `GET /api/tasks` - List all tasks with filtering
+- `GET /api/tasks/:id` - Get specific task
+- `POST /api/tasks` - Create new task
+- `PUT /api/tasks/:id` - Update task
+- `DELETE /api/tasks/:id` - Delete task
+- `GET /api/tasks/stats/summary` - Task statistics
+
+### Analytics & Monitoring (NEW)
+- `GET /api/analytics` - Complete API analytics
+- `GET /api/analytics/summary` - Quick analytics summary
+- `GET /api/analytics/methods` - Statistics by HTTP method
+- `GET /api/analytics/status-codes` - Statistics by status code
+- `GET /api/analytics/performance` - Performance metrics
+
+See [NEW_FEATURES.md](NEW_FEATURES.md) for detailed documentation.
+
 ## 🔧 Configuration
 
 ### Environment Variables
@@ -333,5 +350,14 @@ After exploring this demo:
 3. **Extend** with additional SDLC tools and processes
 4. **Scale** to handle larger teams and more complex deployments
 5. **Evolve** the automation based on your team's feedback and requirements
+
+### New Features Available
+
+This demo now includes:
+- ✅ **Task Management System** - Full CRUD operations with filtering and statistics
+- ✅ **Rate Limiting** - Protect API from abuse with configurable limits
+- ✅ **API Analytics** - Track request patterns, performance, and usage
+
+See [NEW_FEATURES.md](NEW_FEATURES.md) for complete documentation on all new features.
 
 **Happy automating! 🚀**

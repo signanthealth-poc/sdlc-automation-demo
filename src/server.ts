@@ -6,7 +6,10 @@ import { logger } from './utils/logger';
 import { metricsMiddleware, register } from './utils/metrics';
 import { healthRouter } from './routes/health';
 import { apiRouter } from './routes/api';
+import { taskRouter } from './routes/tasks';
+import { analyticsRouter } from './routes/analytics';
 import { errorHandler } from './middleware/errorHandler';
+import { rateLimiter, analyticsMiddleware } from './middleware/rateLimiter';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,6 +17,16 @@ const PORT = process.env.PORT || 3000;
 // Security middleware
 app.use(helmet());
 app.use(cors());
+
+// Rate limiting middleware
+app.use(rateLimiter({
+  windowMs: 60000, // 1 minute
+  maxRequests: 100, // 100 requests per minute per IP
+  message: 'Too many requests from this IP, please try again later'
+}));
+
+// Analytics middleware
+app.use(analyticsMiddleware);
 
 // Logging middleware
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
@@ -28,6 +41,8 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/health', healthRouter);
 app.use('/api', apiRouter);
+app.use('/api/tasks', taskRouter);
+app.use('/api/analytics', analyticsRouter);
 app.get('/metrics', async (req, res) => {
   res.set('Content-Type', register.contentType);
   res.end(await register.metrics());
