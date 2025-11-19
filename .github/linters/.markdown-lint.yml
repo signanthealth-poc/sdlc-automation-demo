@@ -1,0 +1,8 @@
+default: true
+MD013: false  # Line length
+MD033: false  # HTML tags
+MD041: true   # First line heading
+MD025: false  # Multiple top level headings
+MD024: false  # Multiple headings with same content
+MD034: false  # Bare URLs
+MD036: false  # Emphasis used instead of heading
