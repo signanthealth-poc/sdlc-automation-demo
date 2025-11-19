@@ -74,6 +74,8 @@ router.get('/status', (req: Request, res: Response) => {
     features: [
       'User management',
       'Task management',
+      'API analytics & monitoring',
+      'Rate limiting',
       'Health monitoring',
       'Metrics collection',
       'Error handling',
@@ -84,6 +86,7 @@ router.get('/status', (req: Request, res: Response) => {
     endpoints: {
       users: '/api/users',
       tasks: '/api/tasks',
+      analytics: '/api/analytics',
       health: '/health',
       metrics: '/metrics'
     },
